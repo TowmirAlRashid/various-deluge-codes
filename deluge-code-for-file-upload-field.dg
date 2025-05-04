@@ -1,0 +1,32 @@
+string standalone.upload_files_to_so_file_upload_field()
+{
+deal_resp = zoho.crm.getRecordById("Deals","728921000006332102");
+files_list = ifnull(deal_resp.get("Plattegrond_bestand"),List());
+if(files_list.size() > 0)
+{
+	file_upload_list = List();
+	for each  file in files_list
+	{
+		file_id = file.get("file_Id");
+		response = invokeurl
+		[
+			url :"https://www.zohoapis.eu/crm/v2/files?id=" + file_id
+			type :GET
+			connection:"files_connection"
+		];
+		response.setParamName("file");
+		upload_file_to_zfs = invokeurl
+		[
+			url :"https://www.zohoapis.eu/crm/v2/files"
+			type :POST
+			files: response
+			connection:"files_connection"
+		];
+		upload_map = ifnull(ifnull(upload_file_to_zfs.get("data"), List()).get(0), Map());
+		upload_id = ifnull(ifnull(upload_map.get("details"), Map()).get("id"), "");
+		file_upload_list.add({"file_id": upload_id});
+	}
+	info zoho.crm.updateRecord("Sales_Orders", "728921000006532050", {"Plattegrond_bestand": file_upload_list});
+}
+return "";
+}
